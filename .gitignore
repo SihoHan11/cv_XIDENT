@@ -1,0 +1,4 @@
+dataset/
+.agent/
+.env
+.agignore

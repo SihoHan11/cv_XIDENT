@@ -1,0 +1,7 @@
+path: c:/workspace/cv/dataset  # 데이터셋 루트 경로
+train: Training  # Training 폴더 (하위에 images/labels 필요)
+val: Validation  # Validation 폴더 (하위에 images/labels 필요)
+
+# 클래스 설정
+nc: 3  # 클래스 개수
+names: ['eye_opened', 'eye_closed', 'mouth_opened', 'mouth_closed', 'face']  # 학습할 클래스 이름
