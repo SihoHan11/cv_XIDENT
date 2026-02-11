@@ -2,3 +2,5 @@ dataset/
 .agent/
 .env
 .agignore
+dataset_pilot/
+yolo26n.pt

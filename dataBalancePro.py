@@ -1,10 +1,33 @@
 import os
 import random
 import cv2
-import json
 from pathlib import Path
 from tqdm.auto import tqdm
 from concurrent.futures import ProcessPoolExecutor
+
+# 클래스 분석 유닛 (Worker)
+def analyze_worker(lbl_path_str):
+    try:
+        with open(lbl_path_str, 'r') as f:
+            classes = {line.split()[0] for line in f.readlines()}
+        # 1: eye_closed, 2: mouth_opened
+        return lbl_path_str, ('1' in classes or '2' in classes)
+    except Exception:
+        return lbl_path_str, False
+
+# 파일 이동 유닛 (Worker)
+def move_worker(task_info):
+    lbl_path_str, img_dir_str, move_img_dir_str, move_lbl_dir_str = task_info
+    lbl_path = Path(lbl_path_str)
+    img_path = Path(img_dir_str) / f"{lbl_path.stem}.jpg"
+    try:
+        if img_path.exists():
+            os.rename(img_path, Path(move_img_dir_str) / img_path.name)
+            os.rename(lbl_path, Path(move_lbl_dir_str) / lbl_path.name)
+            return True
+    except Exception:
+        pass
+    return False
 
 # 이미지 반전 및 라벨 생성 유닛 (Worker)
 def augment_worker(task_info):
@@ -16,7 +39,6 @@ def augment_worker(task_info):
         return False
 
     try:
-        # 이미지 처리
         img = cv2.imread(str(img_path))
         if img is None: return False
         flipped_img = cv2.flip(img, 1)
@@ -24,7 +46,6 @@ def augment_worker(task_info):
         new_stem = f"{lbl_path.stem}_flip"
         cv2.imwrite(str(Path(aug_img_dir_str) / f"{new_stem}.jpg"), flipped_img)
 
-        # 라벨 처리 (x_center 반전: $x' = 1.0 - x$)
         with open(lbl_path, 'r') as f:
             lines = f.readlines()
         
@@ -50,42 +71,35 @@ def balance_dataset_pro(base_path, move_path, sample_ratio=0.2):
     move_img_dir, move_lbl_dir = move / 'images', move / 'labels'
     aug_img_dir, aug_lbl_dir = img_dir / 'augmented', lbl_dir / 'augmented'
 
-    # 디렉토리 생성
     for d in [move_img_dir, move_lbl_dir, aug_img_dir, aug_lbl_dir]:
         d.mkdir(parents=True, exist_ok=True)
 
-    label_files = list(lbl_dir.glob('*.txt'))
+    label_files = [str(p) for p in lbl_dir.glob('*.txt')]
     minority_files, majority_files = [], []
 
-    print("[1/3] 클래스 분석 및 분류 중...")
-    for lbl_path in tqdm(label_files):
-        with open(lbl_path, 'r') as f:
-            classes = {line.split()[0] for line in f.readlines()}
-        
-        # 1: eye_closed, 2: mouth_opened
-        if '1' in classes or '2' in classes:
-            minority_files.append(lbl_path)
+    print("[1/3] 클래스 병렬 분석 및 분류 중...")
+    with ProcessPoolExecutor() as executor:
+        results = list(tqdm(executor.map(analyze_worker, label_files, chunksize=100), total=len(label_files), desc="분석 중"))
+    
+    for path_str, is_minority in results:
+        if is_minority:
+            minority_files.append(path_str)
         else:
-            majority_files.append(lbl_path)
+            majority_files.append(path_str)
 
-    # 1. 다수 클래스 샘플링 (이동)
-    print(f"[2/3] 다수 클래스 샘플링 (유지 비율: {sample_ratio})...")
+    print(f"[2/3] 다수 클래스 병렬 샘플링 (유지 비율: {sample_ratio})...")
     random.shuffle(majority_files)
     keep_count = int(len(majority_files) * sample_ratio)
     to_move = majority_files[keep_count:]
-
-    for lbl_path in tqdm(to_move, desc="이동 중"):
-        img_path = img_dir / f"{lbl_path.stem}.jpg"
-        if img_path.exists():
-            os.rename(img_path, move_img_dir / img_path.name)
-            os.rename(lbl_path, move_lbl_dir / lbl_path.name)
-
-    # 2. 소수 클래스 병렬 증강
-    print("[3/3] 소수 클래스 병렬 증강 시작 (Flip)...")
-    tasks = [(str(lp), str(img_dir), str(aug_img_dir), str(aug_lbl_dir)) for lp in minority_files]
     
+    move_tasks = [(p, str(img_dir), str(move_img_dir), str(move_lbl_dir)) for p in to_move]
     with ProcessPoolExecutor() as executor:
-        list(tqdm(executor.map(augment_worker, tasks, chunksize=50), total=len(tasks), desc="증강 중"))
+        list(tqdm(executor.map(move_worker, move_tasks, chunksize=100), total=len(move_tasks), desc="이동 중"))
+
+    print("[3/3] 소수 클래스 병렬 증강 시작 (Flip)...")
+    aug_tasks = [(p, str(img_dir), str(aug_img_dir), str(aug_lbl_dir)) for p in minority_files]
+    with ProcessPoolExecutor() as executor:
+        list(tqdm(executor.map(augment_worker, aug_tasks, chunksize=50), total=len(aug_tasks), desc="증강 중"))
 
 if __name__ == "__main__":
-    balance_dataset_pro('dataset/Training', 'dataset/sampledData/Training', sample_ratio=0.2)
+    balance_dataset_pro('dataset/Validation', 'dataset/sampledData/Validation', sample_ratio=0.2)

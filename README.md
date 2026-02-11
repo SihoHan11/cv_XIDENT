@@ -17,7 +17,7 @@
   - `open_eye`, `close_eye`, `mouth_open`, `mouth_close`, `face`
 - [x] **레이블 데이터 정규화** (`jsonNormalizeYolo.py`, `jsonNormalizeYolo.ipynb`)
 - [x] **데이터 분포 확인** (`dataVisualization.ipynb`)
-- [ ] **데이터 불균형 문제 처리** (`dataBalancingPro.py`) *진행 중*
+- [ ] **데이터 불균형 문제 처리** (`dataBalancePro.py`) *진행 중*
 - [ ] **학습/테스트 데이터셋 분리**
 - [ ] **YOLO 학습을 위한 YAML 설정 파일 생성**
 - [ ] **최종 데이터셋 검증 및 무결성 확인**
