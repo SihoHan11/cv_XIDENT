@@ -1,4 +1,4 @@
-path: c:/workspace/cv/dataset  # 데이터셋 루트 경로
+path: dataset_50k  # 데이터셋 루트 경로
 train: Training  # Training 폴더 (하위에 images/labels 필요)
 val: Validation  # Validation 폴더 (하위에 images/labels 필요)
 

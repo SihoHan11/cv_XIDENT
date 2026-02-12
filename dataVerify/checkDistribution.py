@@ -68,7 +68,7 @@ def check_distribution(base_dir, class_names):
 
 def run_analysis():
     CLASS_NAMES = ['eye_opened', 'eye_closed', 'mouth_opened', 'mouth_closed', 'face']
-    DATA_PATHS = [Path('dataset/Training'), Path('dataset/Validation')]
+    DATA_PATHS = [Path('dataset_50k/Training'), Path('dataset_50k/Validation')]
     
     all_orphan_info = {}
 

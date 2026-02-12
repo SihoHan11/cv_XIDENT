@@ -17,17 +17,17 @@
   - `open_eye`, `close_eye`, `mouth_open`, `mouth_close`, `face`
 - [x] **레이블 데이터 정규화** (`jsonNormalizeYolo.py`, `jsonNormalizeYolo.ipynb`)
 - [x] **데이터 분포 확인** (`dataVisualization.ipynb`)
-- [ ] **데이터 불균형 문제 처리** (`dataBalancePro.py`) *진행 중*
-- [ ] **학습/테스트 데이터셋 분리**
-- [ ] **YOLO 학습을 위한 YAML 설정 파일 생성**
-- [ ] **최종 데이터셋 검증 및 무결성 확인**
+- [x] **데이터 샘플링** (`dataBalancePro.py`)
+- [x] **학습/테스트/검증 데이터셋 분리**
+- [x] **YOLO 학습을 위한 YAML 설정 파일 생성**
+- [x] **최종 데이터셋 검증 및 무결성 확인**
 
 
 ### 모델 학습 및 평가 (Planned)
 
 - [ ] **Pilot Training 및 타당성 검토 (Feasibility Study)** (10% 샘플링 데이터를 활용한 모델 수렴성 및 학습 가능성 조기 검증)
+- [ ] ~~**하이퍼파라미터 튜닝** (Learning Rate, Batch Size, Augmentation 설정 최적화)~~ 
 - [ ] **YOLO 모델 학습** (Pre-trained 가중치 활용 및 전이 학습)
 - [ ] **성능 지표 측정 및 분석** (mAP50, Precision, Recall, F1-score)
-- [ ] **하이퍼파라미터 튜닝** (Learning Rate, Batch Size, Augmentation 설정 최적화)
 - [ ] **모델 경량화 및 최적화** (TensorRT/ONNX 변환을 통한 추론 속도 개선)
 - [ ] **실시간 데모 및 경보 시스템 통합 테스트**

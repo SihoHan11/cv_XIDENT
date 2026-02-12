@@ -3,4 +3,8 @@ dataset/
 .env
 .agignore
 dataset_pilot/
+dataset_50k/
+dataset_50k_old/
 yolo26n.pt
+*.zip
+runs/
