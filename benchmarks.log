@@ -1,0 +1,30 @@
+Benchmarks complete for runs/detect/train/weights/best.pt on data.yaml at imgsz=640 (1374.05s)
+Benchmarks legend:  - ✅ Success  - ❎ Export passed but validation failed  - ❌️ Export failed
++------------------------------------------------------------------------------------------+
+|     Format   Status❔   Size (MB)   metrics/mAP50-95(B)   Inference time (ms/im)   FPS   |
++==========================================================================================+
+| 1   ONNX     ✅         9.4         0.7105                80.49                    12.42 |
++------------------------------------------------------------------------------------------+
+Benchmarks complete for runs/detect/train/weights/best.pt on data.yaml at imgsz=640 (0.55s)
+Benchmarks legend:  - ✅ Success  - ❎ Export passed but validation failed  - ❌️ Export failed
++------------------------------------------------------------------------------------------+
+|     Format     Status❔   Size (MB)   metrics/mAP50-95(B)   Inference time (ms/im)   FPS |
++==========================================================================================+
+| 1   OpenVINO   ❌         0.0         -                     -                        -   |
++------------------------------------------------------------------------------------------+
+
+Benchmarks complete for runs/detect/train/weights/best.pt on data.yaml at imgsz=640 (0.65s)
+Benchmarks legend:  - ✅ Success  - ❎ Export passed but validation failed  - ❌️ Export failed
++------------------------------------------------------------------------------------------+
+|     Format     Status❔   Size (MB)   metrics/mAP50-95(B)   Inference time (ms/im)   FPS |
++==========================================================================================+
+| 1   OpenVINO   ❌         0.0         -                     -                        -   |
++------------------------------------------------------------------------------------------+
+
+Benchmarks complete for runs/detect/train/weights/best_openvino_model/ on data.yaml at imgsz=640 (0.50s)
+Benchmarks legend:  - ✅ Success  - ❎ Export passed but validation failed  - ❌️ Export failed
++------------------------------------------------------------------------------------------+
+|     Format     Status❔   Size (MB)   metrics/mAP50-95(B)   Inference time (ms/im)   FPS |
++==========================================================================================+
+| 1   OpenVINO   ❌         0.0         -                     -                        -   |
++------------------------------------------------------------------------------------------+
