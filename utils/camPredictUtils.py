@@ -84,7 +84,7 @@ def draw_filtered_results(frame, filtered_data, class_names, crop_coords):
     for box in filtered_data:
         x1, y1, x2, y2, conf, cls = box
         cx1, cy1 = crop_coords[:2]
-        # OpenCV 좌표는 정수여야 하니까 형변환 잊지 마
+        # OpenCV 좌표는 정수여야 하니까 형변환
         p1, p2 = (int(x1+cx1), int(y1+cy1)), (int(x2+cx1), int(y2+cy1))
         
         # 클래스별 색상 지정 (BGR 순서)
@@ -115,9 +115,9 @@ def isYawning(box, bbox_coords):
     if width == 0:
         return False
         
-    # 종횡비가 0.6 이상이면 하품 상태로 판단
+    # 종횡비가 0.72 이상이면 하품 상태로 판단
     ratio = height / width
-    if ratio >= 0.6:
+    if ratio >= 0.72:
         return True
     
     # 얼굴 면적 대비 입의 면적비 계산
