@@ -240,6 +240,127 @@ class FaceProcessor:
         # 리턴 값 변경: 크롭 좌표(crop_coords)를 포함하여 리턴
         return [head_drop, bbox_coords, crop_coords, aligned_crop]
 
+    def preprocess_image(self, frame, label, image_path='dataset_mediapipe/images/', label_path='dataset_mediapipe/labels/', cnt=0):
+        start_time = time.time()
+
+        h, w, _ = frame.shape
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
+
+        results = self.detector.detect(mp_image)
+
+        if not results.face_landmarks:
+            return -1
+
+        face_landmarks = results.face_landmarks[0]
+
+        # B. Bounding Box 및 Crop 좌표 계산
+        x_coords = [lm.x * w for lm in face_landmarks]
+        y_coords = [lm.y * h for lm in face_landmarks]
+        
+        min_x, max_x = min(x_coords), max(x_coords)
+        min_y, max_y = min(y_coords), max(y_coords)
+
+        bbox_coords = (int(min_x), int(min_y), int(max_x), int(max_y))
+
+        pw = (max_x - min_x) * self.pad_ratio
+        ph = (max_y - min_y) * self.pad_ratio
+
+        start_x = int(max(0, min_x - pw))
+        start_y = int(max(0, min_y - ph))
+        end_x = int(min(w, max_x + pw))
+        end_y = int(min(h, max_y + ph))
+
+        # C. 얼굴 기울기(Roll) 보정 및 정렬 (Face Alignment)
+        left_eye_x = face_landmarks[33].x * w
+        left_eye_y = face_landmarks[33].y * h
+        right_eye_x = face_landmarks[263].x * w
+        right_eye_y = face_landmarks[263].y * h
+
+        delta_x = right_eye_x - left_eye_x
+        delta_y = right_eye_y - left_eye_y
+        angle = np.degrees(np.arctan2(delta_y, delta_x))
+
+        cx = (min_x + max_x) / 2
+        cy = (min_y + max_y) / 2
+
+        M = cv2.getRotationMatrix2D((cx, cy), angle, 1.0)
+        rotated_frame = cv2.warpAffine(frame, M, (w, h), flags=cv2.INTER_CUBIC)
+
+        aligned_crop = rotated_frame[start_y:end_y, start_x:end_x]
+        crop_h, crop_w = aligned_crop.shape[:2]
+
+        # D. YOLO 라벨 좌표 회전 및 크롭 동기화
+        new_labels = []
+        if label:  
+            lines = label.strip().split('\n')
+            for line in lines:
+                if not line.strip(): continue
+                parts = line.strip().split()
+                class_id = parts[0]
+                cx_norm, cy_norm, bw_norm, bh_norm = map(float, parts[1:])
+
+                # 1. 정규화 좌표 -> 원본 이미지 절대 좌표
+                cx_abs = cx_norm * w
+                cy_abs = cy_norm * h
+                bw_abs = bw_norm * w
+                bh_abs = bh_norm * h
+
+                # 2. 바운딩 박스 네 모서리 좌표 추출
+                corners = np.array([
+                    [cx_abs - bw_abs/2, cy_abs - bh_abs/2], # Top-Left
+                    [cx_abs + bw_abs/2, cy_abs - bh_abs/2], # Top-Right
+                    [cx_abs - bw_abs/2, cy_abs + bh_abs/2], # Bottom-Left
+                    [cx_abs + bw_abs/2, cy_abs + bh_abs/2]  # Bottom-Right
+                ])
+
+                # 3. 아핀 변환 행렬(M)을 적용하여 모서리 회전
+                ones = np.ones(shape=(len(corners), 1))
+                corners_ones = np.hstack([corners, ones])
+                rotated_corners = M.dot(corners_ones.T).T
+
+                # 4. 회전된 모서리들을 포함하는 새로운 축 정렬 바운딩 박스 계산
+                new_min_x = np.min(rotated_corners[:, 0])
+                new_max_x = np.max(rotated_corners[:, 0])
+                new_min_y = np.min(rotated_corners[:, 1])
+                new_max_y = np.max(rotated_corners[:, 1])
+
+                # 5. 크롭 좌표계로 평행 이동
+                new_min_x -= start_x
+                new_max_x -= start_x
+                new_min_y -= start_y
+                new_max_y -= start_y
+
+                # 6. 크롭 이미지 영역을 벗어난 좌표 자르기 (Clipping)
+                new_min_x = np.clip(new_min_x, 0, crop_w)
+                new_max_x = np.clip(new_max_x, 0, crop_w)
+                new_min_y = np.clip(new_min_y, 0, crop_h)
+                new_max_y = np.clip(new_max_y, 0, crop_h)
+
+                # 박스가 영역 밖으로 완전히 사라진 경우 예외 처리
+                if new_max_x <= new_min_x or new_max_y <= new_min_y:
+                    continue
+
+                # 7. 크롭 이미지 크기에 맞춰 다시 정규화 (0~1)
+                new_cx = ((new_min_x + new_max_x) / 2) / crop_w
+                new_cy = ((new_min_y + new_max_y) / 2) / crop_h
+                new_bw = (new_max_x - new_min_x) / crop_w
+                new_bh = (new_max_y - new_min_y) / crop_h
+
+                new_labels.append(f"{class_id} {new_cx:.6f} {new_cy:.6f} {new_bw:.6f} {new_bh:.6f}")
+
+        # E. 이미지 및 변환된 라벨 저장 (경로 변수 통일)
+        cv2.imwrite(f"{image_path}crop{cnt}.jpg", aligned_crop)
+        
+        if new_labels:
+            with open(f"{label_path}crop{cnt}.txt", "w") as f:
+                f.write("\n".join(new_labels))
+
+        end_time = time.time()
+        processing_time = (end_time - start_time) * 1000
+        
+        return processing_time
+
 # 얼굴 박스 그리기
 def draw_face_box(frame, bbox_coords, drop_head):
     if bbox_coords is not None:

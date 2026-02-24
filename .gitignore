@@ -8,3 +8,4 @@ dataset_50k_old/
 yolo26n.pt
 *.zip
 runs/
+dataset_mediapipe/
