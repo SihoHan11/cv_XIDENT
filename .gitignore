@@ -9,3 +9,4 @@ yolo26n.pt
 *.zip
 runs/
 dataset_mediapipe/
+dataset_yolo/

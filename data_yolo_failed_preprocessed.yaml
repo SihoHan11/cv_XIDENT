@@ -1,0 +1,12 @@
+
+path: dataset_yolo/failed/preprocessed
+train: images
+val: images
+nc: 5
+names:
+0: 'eye_opened'
+1: 'eye_closed'
+2: 'mouth_opened'
+3: 'mouth_closed'
+4: 'face'
+        
